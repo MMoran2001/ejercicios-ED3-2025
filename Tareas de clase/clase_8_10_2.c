@@ -23,14 +23,16 @@ static uint16_t promedio = 0;
 void configPin(void);
 void configADC(void);
 void configDMA(void);
-void ADC_IRQHandler(void);
+void configDAC(void);
+void DMA_IRQHandler(void);
 
 int main (void){
     configPin();
     configADC();
     configDMA();
+    configDAC();
 
-    DAC_Init(LPC_DAC); // inicio el DAC
+    GPDMA_ChannelCmd(0,ENABLE);
 
     while(1);
     return 0;
@@ -62,19 +64,31 @@ void configADC (void){
     ADC_ChannelCmd(LPC_ADC, ADC_CHANNEL_2, ENABLE);
 }
 
+// CONFIGURACION DE DAC
+void configDAC(void){
+    DAC_Init(LPC_DAC);
+	DAC_CONVERTER_CFG_Type cfgDAC;
+	cfgDAC.CNT_ENA = DISABLE;
+	cfgDAC.DBLBUF_ENA = DISABLE;
+	cfgDAC.DMA_ENA = DISABLE;
+	DAC_ConfigDAConverterControl(LPC_DAC, &cfgDAC);
+}
+
 // CONFIGURACION DE DMA
 void configDMA(void){
     GPDMA_Init();
     GPDMA_Channel_CFG_Type channelConfig = {0};
     GPDMA_LLI_Type lliConfig = {0};
 
-    lliConfig.SrcAddr = (uint32_t)&LPC_ADC->ADDR2;
+    lliConfig.SrcAddr = (uint32_t)&LPC_ADC->ADGDR; // Direccion del registro de datos del ADC
     lliConfig.DstAddr = (uint32_t)adc_buffer;
-    lliConfig.Control = BUFFER_SIZE | (3 << 12) | (3 << 15) | (1 << 27) | (1 << 31);// Transfer size de 16
-                                                                                    // SBsize y DBSize de 16 bits
-                                                                                    // DI = 1
-                                                                                    // I = 1
-    lliConfig.NextLLI = &lliConfig;
+    lliConfig.Control = BUFFER_SIZE |(3 << 12) | (3 << 15) | (2 << 18) | (1 << 21) | (1 << 27) | (1 << 31);// Transfer size de 16
+                                                                                               // SBsize y DBSize de 16 bits
+                                                                                               // DI = 1
+                                                                                               // I = 1
+                                                                                               // Swidth de 16 bits
+                                                                                               // Dwidth de 16 bits
+    lliConfig.NextLLI = (uint32_t)&lliConfig;
     
     channelConfig.ChannelNum = 0;
     channelConfig.SrcMemAddr = 0;
@@ -86,15 +100,24 @@ void configDMA(void){
     channelConfig.DMALLI = &lliConfig;
 
     GPDMA_Setup(&channelConfig);
-    GPDMA_ChannelCmd(0,ENABLE);
+    
     NVIC_EnableIRQ(DMA_IRQn);
 }
 
 // HANDLER DMA
-
 void DMA_IRQHandler(void){
-    if(GPDMA_IntGetStatus(GPDMA_STAT_INT, 0)){
-        //TODO: promedio y mandar al DAC
+    if(GPDMA_IntGetStatus(GPDMA_STAT_INTTC, 0)){
+        volatile uint32_t suma = 0;
+        for(buffer_index = 0; buffer_index < BUFFER_SIZE; buffer_index++){
+            suma += adc_buffer[buffer_index];
+        }
+
+        promedio = suma / BUFFER_SIZE; // Calculo el promedio
+
+        // Escalo el promedio de 12 bits a 10 bits antes de enviarlo al DAC
+        DAC_UpdateValue(LPC_DAC, promedio >> 2); // Cargo el valor en el DAC
+
+        GPDMA_ClearIntPending(GPDMA_STAT_INTTC, 0); // Limpio la interrupcion
     }
 }
 
