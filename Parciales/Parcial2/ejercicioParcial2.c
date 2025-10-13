@@ -90,7 +90,7 @@ void configTimer(void){
     matchCfg.IntOnMatch = ENABLE;
     matchCfg.StopOnMatch = DISABLE;
     matchCfg.ResetOnMatch = ENABLE;
-    matchCfg.MatchValue = 500000; // 0.5s
+    matchCfg.MatchValue = 500000 - 1; // 0.5s
     TIM_ConfigMatch(LPC_TIM1, &matchCfg);
 
     NVIC_EnableIRQ(TIMER1_IRQn);
@@ -116,7 +116,7 @@ void TIMER0_IRQHandler(void){
     if(TIM_GetIntCaptureStatus(LPC_TIM0, TIM_CR0_INT)){
         if(edge_is_rising){
             //Capture un flanco de subida
-            uint32_t current_time = LPC_TIM0 -> CR0;
+            uint32_t current_time = TIM_GetCaptureValue(LPC_TIM0, 0);
             period = current_time - rising_edge_time;
             rising_edge_time = current_time;
 
