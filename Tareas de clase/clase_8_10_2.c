@@ -32,7 +32,7 @@ int main (void){
     configDMA();
     configDAC();
 
-    GPDMA_ChannelCmd(0,ENABLE);
+    GPDMA_ChannelCmd(0,ENABLE); // inicio el canal 0 del DMA
 
     while(1);
     return 0;
@@ -70,7 +70,7 @@ void configDAC(void){
 	DAC_CONVERTER_CFG_Type cfgDAC;
 	cfgDAC.CNT_ENA = DISABLE;
 	cfgDAC.DBLBUF_ENA = DISABLE;
-	cfgDAC.DMA_ENA = DISABLE;
+	cfgDAC.DMA_ENA = ENABLE;
 	DAC_ConfigDAConverterControl(LPC_DAC, &cfgDAC);
 }
 
@@ -97,7 +97,7 @@ void configDMA(void){
     channelConfig.SrcConn = GPDMA_CONN_ADC;
     channelConfig.DstConn = 0;
     channelConfig.TransferType = GPDMA_TRANSFERTYPE_P2M;
-    channelConfig.DMALLI = &lliConfig;
+    channelConfig.DMALLI = (uint32_t)&lliConfig;
 
     GPDMA_Setup(&channelConfig);
     
@@ -117,8 +117,8 @@ void DMA_IRQHandler(void){
         // Escalo el promedio de 12 bits a 10 bits antes de enviarlo al DAC
         DAC_UpdateValue(LPC_DAC, promedio >> 2); // Cargo el valor en el DAC
 
-        GPDMA_ClearIntPending(GPDMA_STAT_INTTC, 0); // Limpio la interrupcion
     }
+    GPDMA_ClearIntPending(GPDMA_STAT_INTTC, 0); // Limpio la interrupcion
 }
 
 
