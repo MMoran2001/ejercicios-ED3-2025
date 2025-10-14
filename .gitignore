@@ -1,3 +1,5 @@
 .vscode/
 CMSISv2p00_LPC17xx/
 CMSISV2p00_LPC17xx/
+test.c
+*.exe

@@ -30,12 +30,12 @@ de la planta y con una frecuencia de 10kHz:
 
 #define FREQ_ADC 40000 // 40kHz
 #define BUFFER_SIZE (1024 / sizeof(uint32_t)) // 1kB
-#define MATCH_VALUE_ADC 391 - 1 // 25us -> 40kHz
-#define MATCH_VALUE_S 500 - 1 // 100us -> 10kHz
+#define MATCH_VALUE_ADC 25 - 1 // 25us -> 40kHz
+#define MATCH_VALUE_S 50 - 1 // 50us -> 10kHz (por toggle)
 #define MAX_VALUE 4095
 #define V_OFFSET 1.65
 
-uint32_t *buffer = (uint32_t *) 0x2000E000;
+uint32_t* buffer = (uint32_t*) 0x2000E000;
 
 void cfgPCB(){
     PINSEL_CFG_Type pin;
