@@ -61,6 +61,8 @@ void configADC(void){
 }
 
 void configDMA(void){
+
+    GPDMA_Init();
     GPDMA_LLI_Type bank1List = {0};
     GPDMA_LLI_Type bank2List = {0};
 
@@ -93,7 +95,7 @@ void configDMA(void){
     res2.DstMemAddr = (uint32_t)SRAM_BANK1_ADDR;
     res2.TransferType = GPDMA_TRANSFERTYPE_P2M;
     res2.SrcConn = GPDMA_CONN_ADC;
-    res2.DMALLI = (uint32_t)&bank1List;
+    res2.DMALLI = (uint32_t)&bank2List;
     GPDMA_Setup(&res2);
 
     GPDMA_ChannelCmd(0, ENABLE);
